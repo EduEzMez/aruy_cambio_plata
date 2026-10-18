@@ -180,6 +180,44 @@ h2{font-family:var(--display); font-weight:600; font-size:1.35rem; letter-spacin
 footer{margin-top:48px; color:var(--muted); font-size:.82rem}
 footer a{color:inherit}
 
+/* ---------- Comparador ---------- */
+.cmp-wrap{border:1px solid var(--line); border-radius:28px; background:var(--surface); padding:28px 32px}
+.cmp-top{display:flex; gap:24px; align-items:flex-end; justify-content:space-between; flex-wrap:wrap}
+.cmp-q{min-width:0; flex:1 1 320px}
+.cmp-q .lbl{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:.95rem; margin-bottom:6px}
+.cmp-amt{display:flex; align-items:baseline; gap:8px; border-bottom:2px solid var(--line); padding-bottom:4px; max-width:460px}
+.cmp-amt:focus-within{border-color:var(--sol)}
+.cmp-amt .sym{font-family:var(--display); font-size:1.5rem; color:var(--muted)}
+.cmp-amt input{flex:1 1 0; width:100%; min-width:0; background:transparent; border:0; outline:none; color:var(--text);
+  font-family:var(--display); font-weight:800; font-size:clamp(2rem,5vw,3rem); letter-spacing:-.03em; font-variant-numeric:tabular-nums}
+.cmp-tools{display:flex; gap:8px; flex-wrap:wrap}
+.cmp-list{list-style:none; margin:22px 0 0; padding:0; display:grid; gap:10px}
+.cmp-item{display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:4px 16px; align-items:center;
+  padding:16px 18px; border:1px solid var(--line); border-radius:18px; background:color-mix(in srgb, var(--bg) 25%, var(--surface))}
+.cmp-item .rank{grid-row:1 / span 2; width:34px; height:34px; border-radius:50%; display:grid; place-items:center;
+  font-family:var(--display); font-weight:800; border:1px solid var(--line); color:var(--muted)}
+.cmp-item .ttl{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-weight:600}
+.cmp-item .desc{grid-column:2; color:var(--muted); font-size:.87rem}
+.cmp-item .cost{grid-row:1 / span 2; grid-column:3; text-align:right; font-variant-numeric:tabular-nums}
+.cmp-item .cost b{display:block; font-family:var(--display); font-weight:600; font-size:clamp(1.25rem,2.6vw,1.7rem); letter-spacing:-.02em; white-space:nowrap}
+.cmp-item .cost small{display:block; color:var(--muted); font-size:.82rem; white-space:nowrap}
+.cmp-item .cost small.worse{color:var(--bad)}
+.cmp-item.best{border-color:#F2B544; background:color-mix(in srgb, #F2B544 10%, var(--surface))}
+.cmp-item.best .rank{background:#F2B544; border-color:#F2B544; color:#1b1405}
+.badge{font-size:.72rem; font-weight:700; letter-spacing:.02em; text-transform:uppercase; padding:3px 8px; border-radius:999px; background:#F2B544; color:#1b1405}
+.cmp-item .stale{color:var(--warn)}
+.cmp-sum{margin:18px 0 0; padding:14px 16px; border-radius:14px; background:color-mix(in srgb, var(--limo) 45%, var(--surface)); font-size:.95rem}
+.cmp-sum b{font-weight:700}
+.cmp-foot{display:flex; gap:16px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; margin-top:14px}
+.cmp-foot p{margin:0; flex:1 1 380px; color:var(--muted); font-size:.82rem}
+@media (max-width:640px){
+  .cmp-wrap{padding:22px 18px}
+  .cmp-item{grid-template-columns:auto minmax(0,1fr)}
+  .cmp-item .rank{grid-row:1}
+  .cmp-item .desc{grid-column:1 / -1}
+  .cmp-item .cost{grid-row:auto; grid-column:1 / -1; text-align:left; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
+}
+
 @media (max-width:880px){
   .converter{grid-template-columns:minmax(0,1fr)}
   .side-in{border-right:0; border-bottom:1px solid var(--line)}
@@ -297,6 +335,28 @@ footer a{color:inherit}
     </div>
   </section>
 
+
+  <h2 id="cmpTitle">¿Qué me conviene?</h2>
+  <section class="cmp-wrap" aria-labelledby="cmpTitle">
+    <div class="cmp-top">
+      <div class="cmp-q">
+        <span class="lbl" id="cmpLbl"></span>
+        <div class="cmp-amt">
+          <span class="sym" id="cmpSym">$U</span>
+          <input id="cmpAmount" size="1" inputmode="decimal" autocomplete="off" aria-label="Monto que querés tener">
+        </div>
+      </div>
+      <div class="cmp-tools">
+        <button class="ghost" id="cmpShare">Compartir comparación</button>
+      </div>
+    </div>
+    <ol class="cmp-list" id="cmpList"></ol>
+    <p class="cmp-sum" id="cmpSum" hidden></p>
+    <div class="cmp-foot">
+      <p id="cmpNote"></p>
+    </div>
+  </section>
+
   <h2>Cotizaciones del momento</h2>
   <div class="rates" id="rates"></div>
   <p class="note" id="srcNote"></p>
@@ -357,7 +417,7 @@ footer a{color:inherit}
 
   const S = {
     mode:"AR", from:"ARS", amount:100000, casa:"blue", side:"venta",
-    ars:{}, uyu:null, arsUy:null, updated:null, source:"", countdown:REFRESH_SECONDS, loading:false
+    cmpAmount:{...{AR:10000, UY:500000}}, ars:{}, uyu:null, arsUy:null, updated:null, source:"", countdown:REFRESH_SECONDS, loading:false
   };
 
   const $ = id => document.getElementById(id);
@@ -576,7 +636,7 @@ footer a{color:inherit}
     $("srcNote").textContent = S.source ? `Fuente: ${S.source}. La app consulta cada ${REFRESH_SECONDS} segundos; la fecha de cada tarjeta es la de la última cotización publicada.` : "";
   }
 
-  function renderAll(flash){ renderMode(); renderCasas(); renderResults(flash); renderRates(); }
+  function renderAll(flash){ renderMode(); renderCasas(); renderResults(flash); renderRates(); renderCompare(); }
 
   /* ---------- Compartir ---------- */
   function shareText(withUrl){
@@ -605,6 +665,103 @@ footer a{color:inherit}
   $("waBtn").addEventListener("click", () => {
     if (!ready()) return;
     window.open("https://wa.me/?text=" + encodeURIComponent(shareText(true)), "_blank", "noopener");
+  });
+
+
+  /* ---------- Comparador "¿Qué me conviene?" ---------- */
+  const CMP_DEFAULT = {AR:10000, UY:500000};
+  const cmpTarget = () => S.mode === "AR" ? "UYU" : "ARS";
+  const cmpOrigin = () => S.mode === "AR" ? "ARS" : "UYU";
+  const mid = o => o ? (((o.compra ?? o.venta) + (o.venta ?? o.compra)) / 2) : null;
+  const money = n => fmt(n, Math.abs(n) >= 1000 ? 0 : 2);
+  const lc = s => s.charAt(0).toLowerCase() + s.slice(1);
+  const ok = (...v) => v.every(x => x != null && isFinite(x) && x > 0);
+
+  function routes(X){
+    const R = [], A = S.ars, U = S.uyu, D = S.arsUy;
+    if (S.mode === "AR"){
+      // Tengo pesos argentinos y necesito X pesos uruguayos
+      if (D && ok(D.compra ?? D.venta))
+        R.push({id:"dir", flags:[ "ARS","UYU"], title:"Cambiar pesos argentinos en Uruguay",
+          desc:"Llevás pesos y los cambiás en una casa de cambio uruguaya.", cost: X / (D.compra ?? D.venta), dates:[D.fecha]});
+      const viaUsd = (k, title, desc) => {
+        const c = A[k]; if (!c || !U || !ok(c.venta, U.compra ?? U.venta)) return;
+        const usd = X / (U.compra ?? U.venta);
+        R.push({id:k, flags:["ARS","USD","UYU"], title, desc:`${desc} Necesitás US$ ${fmt(usd)}.`, cost: usd * c.venta, dates:[c.fecha, U.fecha]});
+      };
+      viaUsd("bolsa", "Comprar dólar MEP y cambiarlo allá", "Comprás dólares MEP desde tu banco o app y los vendés en Uruguay.");
+      viaUsd("oficial", "Comprar dólar oficial y cambiarlo allá", "Comprás dólares al oficial en tu banco y los vendés en Uruguay.");
+      viaUsd("blue", "Comprar dólar blue y cambiarlo allá", "Comprás dólares en el mercado informal y los vendés en Uruguay.");
+      const t = A.tarjeta;
+      if (t && U && ok(t.venta, mid(U)))
+        R.push({id:"tarjeta", flags:["ARS"], title:"Pagar con tarjeta argentina",
+          desc:"Pagás allá con tu tarjeta y abonás el resumen en pesos, al dólar tarjeta.", cost: X / mid(U) * t.venta, dates:[t.fecha, U.fecha]});
+    } else {
+      // Tengo pesos uruguayos y necesito X pesos argentinos
+      if (D && ok(D.venta ?? D.compra))
+        R.push({id:"dir", flags:["UYU","ARS"], title:"Comprar pesos argentinos en Uruguay",
+          desc:"Comprás pesos argentinos en una casa de cambio uruguaya antes de cruzar.", cost: X * (D.venta ?? D.compra), dates:[D.fecha]});
+      const viaUsd = (k, title, desc) => {
+        const c = A[k]; if (!c || !U || !ok(c.compra ?? c.venta, U.venta ?? U.compra)) return;
+        const usd = X / (c.compra ?? c.venta);
+        R.push({id:k, flags:["UYU","USD","ARS"], title, desc:`${desc} Necesitás US$ ${fmt(usd)}.`, cost: usd * (U.venta ?? U.compra), dates:[c.fecha, U.fecha]});
+      };
+      viaUsd("blue", "Llevar dólares y venderlos al blue", "Comprás dólares en Uruguay y los cambiás en Argentina al precio informal.");
+      viaUsd("oficial", "Llevar dólares y cambiarlos en un banco argentino", "Comprás dólares en Uruguay y los vendés al oficial en un banco o casa habilitada.");
+      const m = A.bolsa;
+      if (m && U && ok(m.compra ?? m.venta, mid(U)))
+        R.push({id:"tarjeta", flags:["UYU"], title:"Pagar con tarjeta uruguaya",
+          desc:"Estimado al dólar MEP, que es como suelen liquidarse las tarjetas extranjeras; depende de tu banco.", cost: X / (m.compra ?? m.venta) * mid(U), dates:[m.fecha, U.fecha]});
+    }
+    return R.filter(r => isFinite(r.cost) && r.cost > 0).sort((a,b) => a.cost - b.cost);
+  }
+
+  function renderCompare(){
+    const T = cmpTarget(), O = cmpOrigin();
+    $("cmpLbl").innerHTML = `${flag(T)} Quiero tener en ${S.mode === "AR" ? "Uruguay" : "Argentina"}`;
+    $("cmpSym").textContent = CUR[T].sym;
+    if (document.activeElement !== $("cmpAmount")) $("cmpAmount").value = fmtIn(S.cmpAmount[S.mode]);
+    const X = S.cmpAmount[S.mode];
+    const list = X ? routes(X) : [];
+    if (!list.length){
+      $("cmpList").innerHTML = `<li class="empty">${X ? "Esperando cotizaciones…" : "Ingresá cuánto querés tener."}</li>`;
+      $("cmpSum").hidden = true; $("cmpNote").textContent = ""; return;
+    }
+    const best = list[0].cost;
+    $("cmpList").innerHTML = list.map((r,i) => {
+      const diff = r.cost - best, pct = diff / best * 100;
+      const ages = r.dates.map(age).filter(Boolean), stale = ages.some(a => a.stale);
+      return `<li class="cmp-item${i === 0 ? " best" : ""}">
+        <span class="rank">${i+1}</span>
+        <div class="ttl"><span class="flags">${r.flags.map(c => flag(c)).join("")}</span>${r.title}${i === 0 ? ' <span class="badge">Más conveniente</span>' : ""}</div>
+        <div class="desc">${r.desc}${stale ? ` <span class="stale">· Incluye una cotización ${ages.find(a=>a.stale).pre} ${ages.find(a=>a.stale).txt}.</span>` : ""}</div>
+        <div class="cost"><b>${CUR[O].sym} ${money(r.cost)}</b>
+          <small class="${i ? "worse" : ""}">${i ? `+ ${CUR[O].sym} ${money(diff)} (+${fmt(pct,1)} %)` : "Te cuesta lo menos"}</small></div>
+      </li>`;
+    }).join("");
+    const worst = list[list.length-1];
+    $("cmpSum").hidden = list.length < 2;
+    $("cmpSum").innerHTML = list.length < 2 ? "" :
+      `Para tener <b>${CUR[T].sym} ${fmtIn(X)}</b>, la opción más conveniente es <b>${lc(list[0].title)}</b>: te ahorra <b>${CUR[O].sym} ${money(worst.cost - best)}</b> frente a ${lc(worst.title)}.`;
+    $("cmpNote").textContent = S.mode === "AR"
+      ? "Estimación con cotizaciones de referencia. No incluye comisiones extra de cada casa de cambio ni costos de transferencia. En Uruguay, algunos pagos con tarjeta extranjera tienen beneficios de IVA para turistas: consultá si están vigentes."
+      : "Estimación con cotizaciones de referencia. No incluye comisiones extra de cada casa de cambio ni el costo de tu tarjeta. Cambiá dólares solo en lugares habilitados.";
+  }
+
+  $("cmpAmount").addEventListener("input", e => { S.cmpAmount[S.mode] = parseAmount(e.target.value); renderCompare(); savePrefs(); });
+  $("cmpAmount").addEventListener("blur", e => { e.target.value = fmtIn(S.cmpAmount[S.mode]); });
+  $("cmpShare").addEventListener("click", async () => {
+    const X = S.cmpAmount[S.mode], list = X ? routes(X) : [];
+    if (!list.length){ toast("Esperá a que carguen las cotizaciones"); return; }
+    const O = cmpOrigin(), T = cmpTarget();
+    const text = `¿Qué conviene para tener ${CUR[T].sym} ${fmtIn(X)} ${T}?\n` +
+      list.map((r,i) => `${i+1}. ${r.title}: ${CUR[O].sym} ${money(r.cost)} ${O}`).join("\n") + `\n— ArUy ${SITE_URL}`;
+    if (navigator.share){
+      try{ await navigator.share({title:"ArUy · ¿Qué me conviene?", text}); return; }
+      catch(e){ if (e.name === "AbortError") return; }
+    }
+    if (await copy(text)) toast("Comparación copiada");
+    else window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank", "noopener");
   });
 
   /* ---------- Historial ---------- */
@@ -646,7 +803,7 @@ footer a{color:inherit}
 
   let tt;
   function toast(msg){ const t=$("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(tt); tt = setTimeout(()=>t.classList.remove("show"),2200); }
-  const savePrefs = () => store.set(KEY_PREFS,{mode:S.mode, from:S.from, casa:S.casa, side:S.side, amount:S.amount});
+  const savePrefs = () => store.set(KEY_PREFS,{mode:S.mode, from:S.from, casa:S.casa, side:S.side, amount:S.amount, cmpAmount:S.cmpAmount});
 
   function setFrom(next, keepValue){
     if (keepValue){
@@ -724,6 +881,7 @@ footer a{color:inherit}
   const p = store.get(KEY_PREFS, null);
   if (p) Object.assign(S, p);
   if (!MODES[S.mode]) S.mode = "AR";
+  if (!S.cmpAmount || typeof S.cmpAmount !== "object") S.cmpAmount = {AR:10000, UY:500000};
   $("amount").value = fmtIn(S.amount);
   const cached = store.get(KEY_RATES, null);
   if (cached) Object.assign(S,{ars:cached.ars, uyu:cached.uyu, arsUy:cached.arsUy, updated:cached.updated, source:cached.source});
